@@ -1,0 +1,32 @@
+---
+title: "Chapter-2"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Chapter Notes
+
+## A tidyverse primer
+
+## 2.1 Tidyverse Principles
+
+Design for humans- Most R users use the language for analysis not software development thus the software they use must be intuitive.
+
+Choice of names that are explicit and descriptive instead of short and implicit. Example of solve for matrix inversion given. Functions should be optimized for tab completion when they are similar. Think stringr package.
+
+### 2.1.2 Reuse existing data structures
+
+> The data frame is the preferred data structure in tidyverse and tidymodels packages, because its structure is a good fit for such a broad swath of data science tasks. 
+
+An example of `rsamples::bootstraps()` is given where list columns contain the resamples of every split in a data frame structure that can be extended with map, mutate and other functions of the tidyverse.
+
+There's a downside of using this type of format particularly when performance is important. An example of SDF is given as a specialized data structure. So cool!
+
+### 2.1.3 Design for the pipe and functional programming
+
+Various examples of using functional programming with the pipe are given. If one understands piping and functional programming it should be fairly straightforward. If not, R for Data Science, is a good place to brush up on the use of map, the pipe and other dplyr verbs.
+
+## 2.2 Examples of tidyverse syntax
+
+tibbles subsetting never leads to a single vector unlike base R

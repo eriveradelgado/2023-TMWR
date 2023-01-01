@@ -5,4 +5,64 @@ format: html
 editor: visual
 ---
 
-## 
+# Chapter Notes
+
+## Software for modeling
+
+> The utility of a model hinges on its ability to be reductive, or to reduce complex relationships to simpler terms. -Kuhn and Silge
+
+This rings true and I will add that, much like a map models space reductively, the reductive ability of a model has to be useful in some way to navigate the problem at hand. A point the authors make in the second paragraph of chapter 1.
+
+## 1.1 Fundamentals for modeling software
+
+> It is important that the modeling software you use is easy to operate properly. -Kuhn and Silge
+
+An example of gene names being offset inadvertently by the software used is discussed. Reminds me of the classic Oct1 gene where excel automatically changes the entry to a date. Attention to detail is important but the authors make a point that software design plays a role as well.
+
+Pit of success: A concept by Abrams where design choices leads to users making the right choices by default.
+
+## 1.2 Types of Models
+
+Three types of models classified by their purpose can be identified: descriptive, inferential and predictive.
+
+Descriptive- illustration of an aspect of the dataset. example microarrays where model residuals where used to identify spatial quality control issues such as fingerprints and other interferences.
+
+Inferential - produce a decision or explores a hypothesis (verbatim). Hypothesis testing introduced along with p values. Typically produce probabilistic outputs such as CI, p values posteriors. Careful consideration of the data generating process critical for model validity. Corroborating experiments may be necessary to confirm analysis. (True for predictive models as well perhaps)
+
+Predictive - produce the most accurate forecast for a given metric given a new set of data about the metric. Book availability in shelves example given. Uncertainty may also be an output of the model which can help make better decisions or a measure on which to judge the model itself. A useful distinction is made between empirical models and mechanistic models. Mechanistic models rely on physical phenomena (first principles), some assumptions and experimental data to estimate its parameters.
+
+## 1.3 Connection between types of models
+
+Fun fact ols may fall under any of the three categories proposed by Kuhn and Silge. (Fun!) It all depends on how it is used.
+
+However this is not true for all models. K means being used for inferences would be wrong and is given as an example.
+
+An interesting point is made between a model being optimized for statistical inference and being used for predictive purpose. While statistically sound the model may not have the best performance.
+
+## 1.4 Some Terminology 
+
+Unsupervised learning- no outcome is being predicted only features(variables) are used.
+
+Supervised learning - an outcome is being predicted
+
+Regression - Numeric Predictions
+
+Classification - Qualitative Predictions.
+
+Outcomes - y, labels, endpoints, dependent variable
+
+Predictors - variables,
+
+Quantitative data - can be described with numbers either integers or real.
+
+Descriptive data - discrete data
+
+## How does modeling fit into the data analysis process?
+
+Data cleaning acknowledged as a critical step in the modeling process. Besides traditional data cleaning a point is made that the data are appropriate, aligned with project goals and accurate. This is important.
+
+Another point given for stressing how EDA is important to get properly acquainted with the dataset at hand. It's important because it allows for better feature engineering.
+
+Advice is given to properly set goals and metrics of success before the modeling process is initiated.
+
+A handy diagram of the modeling is presented where candidate models are first proposed, tuned and evaluated. This process can enable better features engineered for subsequent steps and model selection for further refinement. Extra model evaluation should lead to the selection of a final model.
