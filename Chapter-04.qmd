@@ -1,0 +1,30 @@
+---
+title: "Chapter-4"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Chapter Notes
+
+## The Ames Housing Data
+
+This chapter highlights the importance of performing exploratory data analysis(EDA) prior to engaging in more complex modeling.
+
+```{r}
+library(tidymodels)
+theme_set(theme_bw(base_size = 16))
+data("ames")
+glimpse(ames)
+```
+
+Ames is a dataframe object with 74 columns and 2930 rows. I'll follow along to get more acquainted with the dataset.
+
+```{r fig.width=4, fig.height=2}
+ggplot(ames, aes(x = Sale_Price))+
+  geom_histogram(bins = 50, col = "white")+
+  geom_vline(aes(xintercept = mean(ames$Sale_Price)))+
+  geom_vline(aes(xintercept = median(ames$Sale_Price)), color = "red", size = 2)
+```
+
+The authors then proceed to break the data down by neighborhoods.
