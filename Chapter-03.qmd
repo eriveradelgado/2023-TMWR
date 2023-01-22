@@ -1,0 +1,14 @@
+---
+title: "Chapter-3"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Chapter Notes
+
+## A Review of R Modeling Fundamentals
+
+Finding it hard to understand what the authors mean by the formula method having limitations for feature engineering. I think that it means that for complex feature engineering (beyond specifying arithmetic transformations and specifying interactions) a more sophisticated specification system is needed.
+
+Different predict methods have different arguments depending on the library used to create the model (True!). A feature of the language that makes it flexible but cumbersome when one is trying to build a variety of models for a common modeling task.
