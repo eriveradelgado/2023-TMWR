@@ -1,0 +1,48 @@
+---
+title: "Chapter-5"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Chapter Notes
+
+## Spending our Data
+
+Data can be allocated for different modeling purposes such as: model building, model performance, parameter estimation, feature selection and so on. The two most common data splits are a training and a test set.
+
+```{r}
+library(tidymodels)
+
+set.seed(501)
+
+ames_split <- initial_split(ames, prop = 0.8)
+ames_split
+```
+
+The data is split into train, test and finally the total is given.
+
+Each of the splits can be extracted with its own function
+
+```{r}
+train <- training(ames_split)
+test <- testing(ames_split)
+```
+
+The function initial_split() by default performs random sampling. If there's class imbalance in classification problems the argument strata can be provided specifying which column to use for stratification. For time series the function initial_time_split() should be used instead.
+
+## Validation Set
+
+Validation sets will be discussed in chapter 10.
+
+## Multilevel Data
+
+\*Independent experimental unit\* is the point where a datum is independent from another piece of datum.
+
+## Other Considerations for a Data Budget
+
+Keep test set in a separate data frame.
+
+Subsample to reduce class inbalances and to better represent the test and training set.
+
+After checking the performance of the data in the test set the modeler may want to refit the model using the entire data set.
