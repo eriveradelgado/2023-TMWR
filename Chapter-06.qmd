@@ -1,0 +1,127 @@
+---
+title: "Chapter-6"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Chapter Notes
+
+The current chapter focuses on fitting a model and predicting from it using a parsnip object. In future chapters workflows will be introduced.
+
+## Create a Model
+
+Three approaches to linear regression with and without regularization are presented. The authors make a point in introducing the variety of interfaces available to specify the models. A feature parsnip tries to standardize.
+
+Specifying a model via tidymodels involves three steps (Verbatim):
+
+1.  *Specify the type of model based on its mathematical structure* 
+
+2.  *Specify the engine for fitting the model.* 
+
+3.  *When required, declare the mode of the model (regression vs classification).*
+
+```{r}
+library(tidymodels)
+linear_reg() %>% set_engine("lm")
+
+linear_reg() %>% set_engine("glmnet")
+
+linear_reg() %>% set_engine("stan")
+```
+
+Once the model engine is specified we can choose to fit a model via the formula interface, like
+
+lm and stan does using the fit() function or specify the X matrix and the y vector like glment does using the fit_xy().
+
+The translate() function shows the translation from parsnip specification to the specific model specification.
+
+```{r}
+linear_reg(penalty = 1) %>% set_engine("glmnet") %>% translate()
+```
+
+After introducing the concepts of model specification and engine selection a fit of the model is introduced.
+
+```{r}
+ames_split <- initial_split(ames, prop = 0.8, strata = Sale_Price)
+
+ames_train <- training(ames_split)
+
+ames_test <- testing(ames_split)
+
+
+
+lm_model <- linear_reg() %>% set_engine("lm")
+
+lm_form_fit <- lm_model %>% 
+  fit(Sale_Price ~ Longitude + Latitude, data = ames_train)
+
+lm_xy_fit <- lm_model %>% 
+  fit_xy(x = ames_train %>% select(Longitude, Latitude),
+         y = ames_train %>% pull(Sale_Price))
+```
+
+```{r}
+lm_form_fit
+```
+
+```{r}
+lm_xy_fit
+```
+
+parsnip also provides consistent names for the arguments of the same modeling functions in different packages. The translate function can be used once again to translate how parsnip model argument specification relates to the package engine specification.
+
+Model arguments in parsnip are classified as *main* arguments or *engine arguments*. To illustrate this an example with tree engine *ranger* is given.
+
+```{r}
+rand_forest(trees = 1000, min_n = 5) %>% 
+  set_engine("ranger") %>% 
+  set_mode("regression") %>% 
+  translate()
+```
+
+Translate can be used to identify specific arguments from the original function. If these engine specific arguments are of interest they can be specified in the *set_engine()* call.
+
+```{r}
+rand_forest(trees = 1000, min_n = 5) %>% 
+  set_engine("ranger", verbose = TRUE) %>% 
+  set_mode("regression")
+```
+
+See how the output now displays the engine specific argument. Nice!
+
+## Use the Model Results
+
+The fitted model can be extracted with *extract_fit_engine()*
+
+```{r}
+lm_form_fit %>% extract_fit_engine() 
+```
+
+The function above allows to extract from a parsnip object the model fit. From this more traditional methods can be applied for example getting an anova table from the model.
+
+```{r}
+lm_form_fit %>% extract_fit_engine() %>% car::Anova(type = "III")
+```
+
+```{r}
+lm_form_fit %>% extract_fit_engine() %>% broom::tidy()
+```
+
+```{r}
+ames_test_small <- ames_test %>% slice(1:5)
+predict(lm_form_fit, ames_test_small)
+```
+
+```{r}
+ames_test_small %>% 
+  select(Sale_Price) %>% 
+  bind_cols(predict(lm_form_fit, ames_test_small)) %>% 
+  bind_cols(predict(lm_form_fit, ames_test_small, type = "pred_int"))
+```
+
+For the prediction intervals i wonder why the authors didn't select a different nomenclature for the confidence interval that was different to that of the prediction ones.
+
+```{r}
+parsnip_addin()
+```
