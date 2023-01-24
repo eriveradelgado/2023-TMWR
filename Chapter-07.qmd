@@ -1,0 +1,43 @@
+---
+title: "Chapter-7"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Chapter Notes
+
+## Workflow Basics
+
+Workflows allows to bind modeling and preprocesing objects together (verbatim).
+
+```{r}
+library(tidymodels)
+lm_model <- linear_reg() %>% 
+  set_engine("lm")
+
+lm_wflow <- 
+  workflow() %>% 
+  add_model(lm_model)
+
+lm_wflow
+```
+
+```{r}
+lm_wflow <- 
+  lm_wflow %>% 
+  add_formula(Sale_Price ~ Longitude + Latitude)
+
+lm_wflow
+```
+
+```{r}
+lm_fit <- fit(lm_wflow, ames_train)
+lm_fit
+```
+
+```{r}
+predict(lm_fit, ames_test)
+```
+
+tidy select verbs can be used with the *add_variables()* function.
