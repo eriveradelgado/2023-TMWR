@@ -1,0 +1,119 @@
+---
+title: "Chapter-8"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Notes
+
+# Feature Engineering with Recipes
+
+Recipes allows for predictor transformation to preprocess a dataset during the modeling process. It's a core tidymodels package.
+
+```{r}
+library(tidymodels)
+data("ames")
+ames_split <- initial_split(ames, prop = 0.8, strata = Sale_Price)
+
+ames_train <- training(ames_split)
+ames_test <- testing(ames_split)
+
+simple_ames <- recipe(
+  Sale_Price ~ Neighborhood + Gr_Liv_Area + Year_Built + Bldg_Type,
+  data = ames_train
+  ) %>%
+  step_log(Gr_Liv_Area, base = 10) %>% 
+  step_dummy(all_nominal_predictors())
+
+lm_engine <- linear_reg() %>% 
+  set_engine("lm")
+
+lm_wflow <- workflow() %>% 
+  add_model(lm_engine) %>% 
+  add_recipe(simple_ames) %>% 
+  # Fitting within a workflow is possible, but is it recommended?
+  fit(ames_train)
+
+lm_wflow
+```
+
+Functions allow for more choices of preprocessing on predictors than using the formula. We slowly see how the worflow output gives more and more information about the modeling process.
+
+```{r}
+lm_fit <- fit(lm_wflow, ames_train)
+lm_fit %>% 
+  broom::tidy()
+```
+
+The recipe can be recovered from the fit with *extract_recipe(). I would have expected to extract_recipe to work with lm_wflow too but it doesn't*
+
+```{r}
+extract_recipe(lm_fit)
+```
+
+```{r}
+lm_fit %>% 
+  extract_fit_parsnip() %>% 
+  tidy()
+```
+
+I'm confused about the utility of the extract function. Why not just use tidy?
+
+> Finally, when using `predict(workflow, new_data)`, no model or preprocessor parameters like those from recipes are re-estimated using the values in `new_data`. Take centering and scaling using `step_normalize()` as an example. Using this step, the means and standard deviations from the appropriate columns are determined from the training set; new samples at prediction time are standardized using these values from training when `predict()` is invoked.
+
+This paragraph is hard to understand. Should I not use predict with workflow? should i only use it with *lm_fit*?
+
+## Recipes Tour
+
+### Encoding qualitative predictors into numeric
+
+*step_unknown()* used for setting NA's as a factor
+
+*step_novel*() uncertain what it does
+
+*step_other()* bin less frequent factors together. Important argument is threshold.
+
+*step_dummy()* dummy encode columns. Important argument is one_hot
+
+hashing and likelihood encodings. Don't know, have to find out. "*Effect* or l*ikelihood encodings* replace the original data with a single numeric column that measures the *effect* of those data"(Verbatim)
+
+### Interaction Terms
+
+Involves multiple predictors
+
+Dummy variables must be created for qualitative variables before using *step_interact()*.
+
+### Spline Functions
+
+*step_ns()* Can be used to add non linearity to linear models without adding too much complexity. Uses function *ns()* from the splines library which creates new variables for the data. The *deg_free* argument can be considered a tuning parameter.
+
+### Feature Extraction
+
+*step_pca()* creates new columns from existing columns. tidy selectors can be used to choose which columns will be used for feature extraction. Remember that pca needs columns to be on the same scale. Use *step_normalize()*
+
+Other methods available are: independent component analysis, non-negative matrix factorization, multidimensional scaling and uniform manifold approximation and projection
+
+### Row Sampling
+
+Used when there is possibility for class imbalance. Methods include: downsampling(random sample of majority), upsampling(repeated synthesis from the minority) and hybrid approaches.
+
+### General Transformations
+
+*step_mutate()* used for general computations
+
+### Natural Language Processing
+
+Use the text recipes package
+
+## Skipping Steps for New Data
+
+In general tidymodels recipes avoid using the outcome for transformation. When an exception needs to be made to this general rule each recipe *step\_*\* function has a skip argument that can be set to TRUE. The section has a list for functions in recipe that are automatically set to TRUE for the skip argument.\
+
+## Tidy a recipe()
+
+the tidy() method from broom can be applied to recipe objects to inspect the set of recipe steps. Furthermore, it can also be used to zoom in on a particular step and better inspect it. steps in recipe have argument called id that can be set to an arbitrary character to identify the contents later on via the tidy method. Also tidy can be called with argument number set to the number in the recipe step.
+
+## Column Roles
+
+*update_role()* and *add_role()* can be used to identify non predictor columns if we want to later inspect certain non predictor columns after modeling.
