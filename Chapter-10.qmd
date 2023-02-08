@@ -1,0 +1,130 @@
+---
+title: "Chapter-10"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Notes
+
+# Resampling for Evaluating Performance
+
+Resampling is a method to evaluate a method before using the test set.
+
+## The resubstitution approach
+
+```{r}
+library(tidymodels)
+rf_model <- rand_forest(trees = 1000) %>% 
+  set_engine("ranger") %>% 
+  set_mode("regression")
+
+rf_workflow <- 
+  workflow() %>% 
+  add_formula(Sale_Price ~ Neighborhood + Gr_Liv_Area + Year_Built + Bldg_Type + Latitude + Longitude) %>% 
+  add_model(rf_model)
+
+rf_fit <- rf_workflow %>% 
+  fit(data = ames_train)
+  
+```
+
+The following is a few lines of code to estimate rmse and rsq from the text
+
+```{r}
+estimate_perf <- function(model, dat) {
+  # Capture the names of the `model` and `dat` objects
+  cl <- match.call()
+  obj_name <- as.character(cl$model)
+  data_name <- as.character(cl$dat)
+  data_name <- gsub("ames_", "", data_name)
+  
+  # Estimate these metrics:
+  reg_metrics <- metric_set(rmse, rsq)
+  
+  model %>%
+    predict(dat) %>%
+    bind_cols(dat %>% select(Sale_Price)) %>%
+    reg_metrics(Sale_Price, .pred) %>%
+    select(-.estimator) %>%
+    mutate(object = obj_name, data = data_name)
+}
+```
+
+```{r}
+estimate_perf(lm_fit, ames_train)
+```
+
+```{r}
+estimate_perf(rf_fit, ames_test)
+estimate_perf(lm_fit, ames_test)
+```
+
+## Resampling Methods
+
+The concepts of analysis sets and assessment sets are introduced which are analogous to having a training and test set for every data resample. The metrics of each resample are used to create a global average that is more characteristic of the performance of the modeling method as a whole.
+
+### Cross-Validation
+
+v fold cross validation: data is split into equal sizes and 1 fold is held out for assessment while the other v-1 folds are used for analysis.
+
+Values of V in practice range from 5 or 10.
+
+```{r}
+ames_folds <- vfold_cv(ames_train, v = 10)
+```
+
+### Repeated Cross-Validation
+
+Cross validation may be noisy as is. To reduce this noise repetition is introduced.
+
+> Due to the Central Limit Theorem, the summary statistics from each model tend toward a normal distribution, \*as long as we have a lot of data relative to V×R.\*
+
+```{r}
+vfold_cv(ames_train, v = 10, repeats = 5)
+```
+
+### Monte Carlo Cross Validation
+
+Selects assessment sets randomly
+
+```{r}
+mc_cv(ames_train, prop = 9/10, times = 20)
+```
+
+### Validation Sets
+
+When there is a lot of data
+
+```{r}
+set.seed(1002)
+val_set <- validation_split(ames_train, prop = 3/4)
+val_set
+```
+
+### Bootstraps
+
+Tends to produce pessimistic estimates of performance due to its low variance
+
+```{r}
+bootstraps(ames_train, times = 5)
+
+```
+
+## Estimating Performance
+
+```{r}
+keep_pred <- control_resamples(save_pred = TRUE, save_workflow = TRUE)
+
+rf_res <- rf_workflow %>% 
+  fit_resamples(ames_folds, control = keep_pred)
+rf_res
+```
+
+```{r}
+collect_metrics(rf_res, summarize = F) %>% 
+  ggplot(aes(y = .estimate, x = ""))+
+  geom_point(position = position_dodge2(width = 0.3))+
+  stat_summary(fun.data = mean_cl_boot, geom = "pointrange", color = "red")+
+  facet_wrap(~.metric, scales = "free_y")
+```
