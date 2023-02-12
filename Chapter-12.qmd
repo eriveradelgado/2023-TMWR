@@ -1,0 +1,68 @@
+---
+title: "Chapter-10"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Notes on Chapter 12
+
+Two general strategies for hyperparameter optimization exist: Grid Search and Iterative Search
+
+*Grid Search* involves a predefined set of points in space. Can become large as the number of features increases.
+
+*Iterative Search* is also known as sequential search. Future states depend on outcomes of previous steps.
+
+## Tuning parameters in tidymodels
+
+*main arguments* are specified in the call to the model and are available across engines. Frequently optimized.
+
+*engine specific* are only available for the particular engine being used. Not optimized as frequently.
+
+```{r}
+neural_net_spec <- 
+  mlp(hidden_units = tune()) %>%
+  set_mode("regression") %>%
+  set_engine("keras")
+```
+
+Above the *tune()* function tags hidden units for optimization. We can use the function *extract_parameter_set_dials() to examine which parameters have been set for a tidymodels chunk.*
+
+*tune()* can be used in the main model call or in a recipe's step for select
+
+```{r}
+extract_parameter_set_dials(neural_net_spec)
+
+```
+
+```{r}
+ames_rec <- 
+  recipe(Sale_Price ~ Neighborhood + Gr_Liv_Area + Year_Built + Bldg_Type + 
+           Latitude + Longitude, data = ames_train)  %>%
+  step_log(Gr_Liv_Area, base = 10) %>% 
+  step_other(Neighborhood, threshold = tune()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_interact( ~ Gr_Liv_Area:starts_with("Bldg_Type_") ) %>% 
+  step_ns(Longitude, deg_free = tune("longitude df")) %>% 
+  step_ns(Latitude,  deg_free = tune("latitude df"))
+
+recipes_param <- extract_parameter_set_dials(ames_rec)
+recipes_param
+
+```
+
+```{r}
+wflow_param <- 
+  workflow() %>% 
+  add_recipe(ames_rec) %>% 
+  add_model(neural_net_spec) %>% 
+  extract_parameter_set_dials()
+wflow_param
+
+```
+
+```{r}
+extract_parameter_set_dials(ames_rec) %>% 
+  update(threshold = threshold(c(0.8, 1.0)))
+
+```
