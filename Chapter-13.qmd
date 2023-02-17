@@ -1,0 +1,186 @@
+---
+title: "Chapter-10"
+author: "Edgardo Rivera-Delgado"
+format: html
+editor: visual
+---
+
+# Notes on Chapter 12
+
+## Regular Grid
+
+```{r}
+library(tidymodels)
+tidymodels_prefer()
+
+mlp_spec <- 
+  mlp(hidden_units = tune(), penalty = tune(), epochs = tune()) %>% 
+  set_engine("nnet", trace = 0) %>% 
+  set_mode("classification")
+```
+
+```{r}
+mlp_param <- extract_parameter_set_dials(mlp_spec)
+mlp_param %>% extract_parameter_dials("hidden_units")
+#> # Hidden Units (quantitative)
+#> Range: [1, 10]
+mlp_param %>% extract_parameter_dials("penalty")
+#> Amount of Regularization (quantitative)
+#> Transformer: log-10 [1e-100, Inf]
+#> Range (transformed scale): [-10, 0]
+mlp_param %>% extract_parameter_dials("epochs")
+#> # Epochs (quantitative)
+#> Range: [10, 1000]
+```
+
+grid functions take the output of *extract_parameter_set_dials(). grid_regular()* can be supplied with a named vector with each named element specifying the number of levels to include for that particular parameter. Alternatively *grid_regular()* can be supplied with an argument levels which will create as many levels as specified for each parameter to be tuned.
+
+```{r}
+mlp_param %>% 
+  grid_regular(levels = c(hidden_units = 3, penalty = 2, epochs = 2))
+#> # A tibble: 12 × 3
+#>   hidden_units      penalty epochs
+#>          <int>        <dbl>  <int>
+#> 1            1 0.0000000001     10
+#> 2            5 0.0000000001     10
+#> 3           10 0.0000000001     10
+#> 4            1 1                10
+#> 5            5 1                10
+#> 6           10 1                10
+#> # … with 6 more rows
+```
+
+## Irregular Grid
+
+Providing a size argument provides random combinations equal to the size given.
+
+```{r}
+set.seed(1301)
+mlp_param %>% 
+  grid_random(size = 1000) %>% # 'size' is the number of combinations
+  summary()
+#>   hidden_units      penalty           epochs   
+#>  Min.   : 1.00   Min.   :0.0000   Min.   : 10  
+#>  1st Qu.: 3.00   1st Qu.:0.0000   1st Qu.:266  
+#>  Median : 5.00   Median :0.0000   Median :497  
+#>  Mean   : 5.38   Mean   :0.0437   Mean   :510  
+#>  3rd Qu.: 8.00   3rd Qu.:0.0027   3rd Qu.:761  
+#>  Max.   :10.00   Max.   :0.9814   Max.   :999
+```
+
+## Evaluating the Grid
+
+```{r}
+library(tidymodels)
+data(cells)
+cells <- cells %>% select(-case)
+```
+
+```{r}
+set.seed(1304)
+cell_folds <- vfold_cv(cells)
+```
+
+```{r}
+mlp_rec <-
+  recipe(class ~ ., data = cells) %>%
+  step_YeoJohnson(all_numeric_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) %>% 
+  step_pca(all_numeric_predictors(), num_comp = tune()) %>% 
+  step_normalize(all_numeric_predictors())
+
+mlp_wflow <- 
+  workflow() %>% 
+  add_model(mlp_spec) %>% 
+  add_recipe(mlp_rec)
+```
+
+```{r}
+mlp_param <- 
+  mlp_wflow %>% 
+  extract_parameter_set_dials() %>% 
+  update(
+    epochs = epochs(c(50, 200)),
+    num_comp = num_comp(c(0, 40))
+  )
+```
+
+A new workflow function is introduced *tune_grid()* which takes three objects, the folds object a grid object and a metrics object.
+
+```{r}
+roc_res <- metric_set(roc_auc)
+set.seed(1305)
+mlp_reg_tune <-
+  mlp_wflow %>%
+  tune_grid(
+    cell_folds,
+    grid = mlp_param %>% grid_regular(levels = 3),
+    metrics = roc_res
+  )
+mlp_reg_tune
+#> # Tuning results
+#> # 10-fold cross-validation 
+#> # A tibble: 10 × 4
+#>   splits             id     .metrics          .notes          
+#>   <list>             <chr>  <list>            <list>          
+#> 1 <split [1817/202]> Fold01 <tibble [81 × 8]> <tibble [0 × 3]>
+#> 2 <split [1817/202]> Fold02 <tibble [81 × 8]> <tibble [0 × 3]>
+#> 3 <split [1817/202]> Fold03 <tibble [81 × 8]> <tibble [0 × 3]>
+#> 4 <split [1817/202]> Fold04 <tibble [81 × 8]> <tibble [0 × 3]>
+#> 5 <split [1817/202]> Fold05 <tibble [81 × 8]> <tibble [0 × 3]>
+#> 6 <split [1817/202]> Fold06 <tibble [81 × 8]> <tibble [0 × 3]>
+#> # … with 4 more rows
+```
+
+```{r}
+autoplot(mlp_reg_tune)
+```
+
+```{r}
+show_best(mlp_reg_tune)
+```
+
+```{r}
+logistic_param <- 
+  tibble(
+    num_comp = 0,
+    epochs = 125,
+    hidden_units = 1,
+    penalty = 1
+  )
+
+final_mlp_wflow <- 
+  mlp_wflow %>% 
+  finalize_workflow(logistic_param)
+final_mlp_wflow
+#> ══ Workflow ═════════════════════════════════════════════════════════════════════════
+#> Preprocessor: Recipe
+#> Model: mlp()
+#> 
+#> ── Preprocessor ─────────────────────────────────────────────────────────────────────
+#> 4 Recipe Steps
+#> 
+#> • step_YeoJohnson()
+#> • step_normalize()
+#> • step_pca()
+#> • step_normalize()
+#> 
+#> ── Model ────────────────────────────────────────────────────────────────────────────
+#> Single Layer Neural Network Model Specification (classification)
+#> 
+#> Main Arguments:
+#>   hidden_units = 1
+#>   penalty = 1
+#>   epochs = 125
+#> 
+#> Engine-Specific Arguments:
+#>   trace = 0
+#> 
+#> Computational engine: nnet
+```
+
+```{r}
+final_mlp_fit <- 
+  final_mlp_wflow %>% 
+  fit(cells)
+```
